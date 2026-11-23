@@ -16,15 +16,21 @@ import {
   CurrencyPickerDropdown,
   PickerAnchor,
 } from '../src/components/CurrencyPickerDropdown';
+import { CurrencyRateList } from '../src/components/CurrencyRateList';
+import { ModeSwitcher } from '../src/components/ModeSwitcher';
+import type { AppMode } from '../src/components/ModeSwitcher';
 import { RateHistoryChart } from '../src/components/RateHistoryChart';
 import { useRates } from '../src/hooks/useRates';
 import { getCurrencySections } from '../src/utils/currencyOptions';
 import { convert, getDecimalPlaces } from '../src/utils/convert';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ConverterScreen() {
   const [amount, setAmount] = useState('1');
   const [fromCurrency, setFromCurrency] = useState('USD');
   const [toCurrency, setToCurrency] = useState('EUR');
+  const [activeMode, setActiveMode] = useState<AppMode>('convert');
+  const [chartBaseCurrency, setChartBaseCurrency] = useState('USD');
   const [isAmountFocused, setIsAmountFocused] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'from' | 'to' | null>(null);
   const [pickerAnchor, setPickerAnchor] = useState<PickerAnchor | null>(null);
@@ -48,167 +54,200 @@ export default function ConverterScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <Text style={styles.eyebrow}>CURRENCY CONVERTER</Text>
+          <ModeSwitcher
+            mode={activeMode}
+            onChange={(mode) => {
+              Keyboard.dismiss();
+              setActiveMode(mode);
+              setIsAmountFocused(false);
+              setPickerTarget(null);
+              setPickerAnchor(null);
+            }}
+          />
 
-          <View style={styles.card}>
-            <View style={styles.amountColumns}>
-              <View style={styles.amountColumn}>
-                <Text style={styles.label}>From: </Text>
-                <View style={styles.amountInputRow}>
-                  <TextInput
-                    accessibilityLabel="Amount to convert"
-                    blurOnSubmit
-                    keyboardType="decimal-pad"
-                    onBlur={() => {
-                      setIsAmountFocused(false);
-                      setAmount((currentAmount) =>
-                        currentAmount.trim() === '' ? '1' : currentAmount,
-                      );
-                    }}
-                    onChangeText={setAmount}
-                    onFocus={() => setIsAmountFocused(true)}
-                    onSubmitEditing={Keyboard.dismiss}
-                    placeholder="Amount"
-                    returnKeyType="done"
-                    style={styles.input}
-                    value={amount}
-                  />
-                  {isAmountFocused && amount !== '' ? (
-                    <Pressable
-                      accessibilityLabel="Clear amount"
-                      accessibilityRole="button"
-                      hitSlop={8}
-                      onPress={() => setAmount('')}
-                      style={styles.clearAmountButton}
+          {activeMode === 'convert' ? (
+            <>
+              <View style={styles.card}>
+                <View style={styles.amountColumns}>
+                  <View style={styles.amountColumn}>
+                    <Text style={styles.label}>From: </Text>
+                    <View style={styles.amountInputRow}>
+                      <TextInput
+                        accessibilityLabel="Amount to convert"
+                        blurOnSubmit
+                        keyboardType="decimal-pad"
+                        onBlur={() => {
+                          setIsAmountFocused(false);
+                          setAmount((currentAmount) =>
+                            currentAmount.trim() === '' ? '1' : currentAmount,
+                          );
+                        }}
+                        onChangeText={setAmount}
+                        onFocus={() => setIsAmountFocused(true)}
+                        onSubmitEditing={Keyboard.dismiss}
+                        placeholder="Amount"
+                        returnKeyType="done"
+                        style={styles.input}
+                        value={amount}
+                      />
+                      {isAmountFocused && amount !== '' ? (
+                        <Pressable
+                          accessibilityLabel="Clear amount"
+                          accessibilityRole="button"
+                          hitSlop={8}
+                          onPress={() => setAmount('')}
+                          style={styles.clearAmountButton}
+                        >
+                          {/* <Text style={styles.clearAmountText}>×</Text> */}
+                          <Ionicons name="close-circle" size={20} color="#74747C" />
+                        </Pressable>
+                      ) : null}
+                    </View>
+                  </View>
+                  <View style={styles.amountColumn}>
+                    <Text style={styles.label}>To: </Text>
+                    <Text
+                      adjustsFontSizeToFit
+                      numberOfLines={1}
+                      style={[styles.result, styles.resultAmount]}
                     >
-                      <Text style={styles.clearAmountText}>×</Text>
-                    </Pressable>
-                  ) : null}
+                      {result === null
+                        ? '—'
+                        : result.toLocaleString(undefined, {
+                            minimumFractionDigits: getDecimalPlaces(toCurrency),
+                            maximumFractionDigits: getDecimalPlaces(toCurrency),
+                          })}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.amountColumn}>
-                <Text style={styles.label}>To: </Text>
-                <Text
-                  adjustsFontSizeToFit
-                  numberOfLines={1}
-                  style={[styles.result, styles.resultAmount]}
-                >
-                  {result === null
-                    ? '—'
-                    : result.toLocaleString(undefined, {
-                        minimumFractionDigits: getDecimalPlaces(toCurrency),
-                        maximumFractionDigits: getDecimalPlaces(toCurrency),
-                      })}
-                </Text>
-              </View>
-            </View>
 
-            <View style={styles.currencyRow}>
-              <CurrencyButton
-                accessibilityLabel="Source currency"
-                disabled={!ratesQuery.data}
-                onPress={(anchor) => {
-                  setPickerTarget('from');
-                  setPickerAnchor(anchor);
-                }}
-                value={fromCurrency}
-              />
-              <Pressable
-                accessibilityHint="Swap the source and target currencies"
-                accessibilityLabel="Swap currencies"
-                accessibilityRole="button"
-                disabled={!ratesQuery.data}
-                onPress={() => {
-                  Keyboard.dismiss();
-                  setFromCurrency(toCurrency);
-                  setToCurrency(fromCurrency);
-                }}
-                style={({ pressed }) => [
-                  styles.swapButton,
-                  pressed && styles.swapButtonPressed,
-                  !ratesQuery.data && styles.disabledButton,
-                ]}
-              >
-                <Text style={styles.swapArrow}>⇄</Text>
-              </Pressable>
-              <CurrencyButton
-                accessibilityLabel="Target currency"
-                disabled={!ratesQuery.data}
-                onPress={(anchor) => {
-                  setPickerTarget('to');
-                  setPickerAnchor(anchor);
-                }}
-                value={toCurrency}
-              />
-            </View>
-          </View>
-
-          <View style={styles.rateSummaryRow}>
-            <View style={styles.rateSummaryContent}>
-              {ratesQuery.isPending ? (
-                <View style={styles.statusRow}>
-                  <ActivityIndicator size="small" />
-                  <Text style={styles.statusText}>Loading exchange rates…</Text>
-                </View>
-              ) : ratesQuery.isError ? (
-                <View style={styles.messageBox}>
-                  <Text style={styles.errorText}>
-                    {ratesQuery.error.message || 'Unable to load exchange rates.'}
-                  </Text>
+                <View style={styles.currencyRow}>
+                  <CurrencyButton
+                    accessibilityLabel="Source currency"
+                    disabled={!ratesQuery.data}
+                    onPress={(anchor) => {
+                      setPickerTarget('from');
+                      setPickerAnchor(anchor);
+                    }}
+                    value={fromCurrency}
+                  />
                   <Pressable
+                    accessibilityHint="Swap the source and target currencies"
+                    accessibilityLabel="Swap currencies"
+                    accessibilityRole="button"
+                    disabled={!ratesQuery.data}
                     onPress={() => {
                       Keyboard.dismiss();
-                      ratesQuery.refetch();
+                      setFromCurrency(toCurrency);
+                      setToCurrency(fromCurrency);
                     }}
-                    style={styles.retryButton}
+                    style={({ pressed }) => [
+                      styles.swapButton,
+                      pressed && styles.swapButtonPressed,
+                      !ratesQuery.data && styles.disabledButton,
+                    ]}
                   >
-                    <Text style={styles.retryText}>Try again</Text>
+                    <Text style={styles.swapArrow}>⇄</Text>
                   </Pressable>
+                  <CurrencyButton
+                    accessibilityLabel="Target currency"
+                    disabled={!ratesQuery.data}
+                    onPress={(anchor) => {
+                      setPickerTarget('to');
+                      setPickerAnchor(anchor);
+                    }}
+                    value={toCurrency}
+                  />
                 </View>
-              ) : result === null ? (
-                <Text style={styles.hint}>
-                  Enter a valid amount and supported three-letter currency codes.
-                </Text>
-              ) : (
-                <View style={styles.rateInfo}>
-                  <Text style={styles.rateText}>
-                    {ratesQuery.data?.source === 'cache'
-                      ? 'Offline: using saved rates'
-                      : ratesQuery.data
-                        ? `Updated ${ratesQuery.data.date} · ${formatFetchTime(
-                            ratesQuery.data.fetchedAt,
-                          )}`
-                        : ''}
-                  </Text>
-                  {ratesQuery.data?.source === 'cache' ? (
-                    <Text style={styles.rateText}>
-                      Saved {new Date(ratesQuery.data.fetchedAt).toLocaleString()}
+              </View>
+
+              <View style={styles.rateSummaryRow}>
+                <View style={styles.rateSummaryContent}>
+                  {ratesQuery.isPending ? (
+                    <View style={styles.statusRow}>
+                      <ActivityIndicator size="small" />
+                      <Text style={styles.statusText}>
+                        Loading exchange rates…
+                      </Text>
+                    </View>
+                  ) : ratesQuery.isError ? (
+                    <View style={styles.messageBox}>
+                      <Text style={styles.errorText}>
+                        {ratesQuery.error.message ||
+                          'Unable to load exchange rates.'}
+                      </Text>
+                      <Pressable
+                        onPress={() => {
+                          Keyboard.dismiss();
+                          ratesQuery.refetch();
+                        }}
+                        style={styles.retryButton}
+                      >
+                        <Text style={styles.retryText}>Try again</Text>
+                      </Pressable>
+                    </View>
+                  ) : result === null ? (
+                    <Text style={styles.hint}>
+                      Enter a valid amount and supported three-letter currency
+                      codes.
                     </Text>
-                  ) : null}
+                  ) : (
+                    <View style={styles.rateInfo}>
+                      <Text style={styles.rateText}>
+                        {ratesQuery.data?.source === 'cache'
+                          ? 'Offline: using saved rates'
+                          : ratesQuery.data
+                            ? `Updated ${ratesQuery.data.date} · ${formatFetchTime(
+                                ratesQuery.data.fetchedAt,
+                              )}`
+                            : ''}
+                      </Text>
+                      {ratesQuery.data?.source === 'cache' ? (
+                        <Text style={styles.rateText}>
+                          Saved{' '}
+                          {new Date(
+                            ratesQuery.data.fetchedAt,
+                          ).toLocaleString()}
+                        </Text>
+                      ) : null}
+                    </View>
+                  )}
                 </View>
-              )}
-            </View>
-            <Pressable
-              accessibilityLabel="Refresh rates"
-              accessibilityRole="button"
-              disabled={ratesQuery.isFetching}
-              onPress={() => {
-                Keyboard.dismiss();
+                <Pressable
+                  accessibilityLabel="Refresh rates"
+                  accessibilityRole="button"
+                  disabled={ratesQuery.isFetching}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    ratesQuery.refetch();
+                  }}
+                  style={({ pressed }) => [
+                    styles.refreshButton,
+                    pressed && styles.refreshButtonPressed,
+                    ratesQuery.isFetching && styles.disabledButton,
+                  ]}
+                >
+                  <Text style={styles.refreshIcon}>↻</Text>
+                  <Text style={styles.refreshText}>
+                    {ratesQuery.isFetching ? 'Refreshing' : 'Refresh'}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <RateHistoryChart base={fromCurrency} quote={toCurrency} />
+            </>
+          ) : (
+            <CurrencyRateList
+              baseCurrency={chartBaseCurrency}
+              onBaseCurrencyChange={setChartBaseCurrency}
+              rates={ratesQuery.data}
+              ratesError={ratesQuery.error?.message ?? null}
+              ratesLoading={ratesQuery.isPending}
+              onRetryRates={() => {
                 ratesQuery.refetch();
               }}
-              style={({ pressed }) => [
-                styles.refreshButton,
-                pressed && styles.refreshButtonPressed,
-                ratesQuery.isFetching && styles.disabledButton,
-              ]}
-            >
-              <Text style={styles.refreshIcon}>↻</Text>
-              <Text style={styles.refreshText}>
-                {ratesQuery.isFetching ? 'Refreshing' : 'Refresh'}
-              </Text>
-            </Pressable>
-          </View>
-
-          <RateHistoryChart base={fromCurrency} quote={toCurrency} />
+            />
+          )}
         </View>
         <CurrencyPickerDropdown
           anchor={pickerAnchor}
@@ -272,7 +311,13 @@ function CurrencyButton({
       style={[styles.currencyInput, disabled && styles.disabledCurrencyInput]}
     >
       <Text style={styles.currencyButtonText}>{value}</Text>
-      <Text style={styles.currencyChevron}>v</Text>
+      {/* <Text style={styles.currencyChevron}>v</Text> */}
+      <Ionicons 
+        name="chevron-down" 
+        size={16} 
+        color="#333333" 
+        style={styles.currencyChevron} 
+      />
     </Pressable>
   );
 }
@@ -349,7 +394,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 6,
     borderRadius: 10,
-    backgroundColor: '#8e8e93',
+    backgroundColor: '#FFFFFF',
   },
   clearAmountText: {
     color: '#ffffff',
