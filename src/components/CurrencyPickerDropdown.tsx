@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { CurrencyOption } from '../constants/currencies';
 import { CurrencySection } from '../utils/currencyOptions';
+import { Ionicons } from '@expo/vector-icons';
 
 export interface PickerAnchor {
   x: number;
@@ -115,7 +116,8 @@ export function CurrencyPickerDropdown({
                 onPress={onClose}
                 style={styles.closeButton}
               >
-                <Text style={styles.closeText}>x</Text>
+                {/* <Text style={styles.closeText}>x</Text> */}
+                <Ionicons name="close-circle" size={20} color="#74747C" />
               </Pressable>
             </View>
             <TextInput
@@ -217,7 +219,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 15,
-    backgroundColor: '#f1f3f9',
+    backgroundColor: '#FFFFFF',
   },
   closeText: {
     color: '#667085',

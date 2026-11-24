@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Currency Converter",
-    "slug": "currency-converter",
-    "scheme": "currency-converter",
+    "name": "T-rex",
+    "slug": "t-rex",
+    "scheme": "t-rex",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
