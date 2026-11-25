@@ -12,6 +12,7 @@ import {
 import { CurrencyOption } from '../constants/currencies';
 import { CurrencySection } from '../utils/currencyOptions';
 import { Ionicons } from '@expo/vector-icons';
+import {useTheme} from '../context/ThemeContext';
 
 export interface PickerAnchor {
   x: number;
@@ -39,6 +40,7 @@ export function CurrencyPickerDropdown({
   title,
   visible,
 }: CurrencyPickerDropdownProps) {
+  const { isDarkMode, colors } = useTheme();
   const [search, setSearch] = useState('');
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   useEffect(() => {
@@ -105,19 +107,19 @@ export function CurrencyPickerDropdown({
             accessibilityViewIsModal
             style={[
               styles.popover,
-              { top, left, width: dropdownWidth, height: maxHeight },
+              { top, left, width: dropdownWidth, height: maxHeight,backgroundColor: colors.cardBg, borderColor: colors.border, },
             ]}
           >
             <View style={styles.header}>
-              <Text style={styles.title}>{title}</Text>
+              <Text style={[styles.title, { color: colors.subtext }]}>{title}</Text>
               <Pressable
                 accessibilityLabel="Close currency picker"
                 accessibilityRole="button"
                 onPress={onClose}
-                style={styles.closeButton}
+                style={[styles.closeButton, { backgroundColor: colors.cardBg }]}
               >
                 {/* <Text style={styles.closeText}>x</Text> */}
-                <Ionicons name="close-circle" size={20} color="#74747C" />
+                <Ionicons name="close-circle" size={20} color={colors.subtext} />
               </Pressable>
             </View>
             <TextInput
@@ -126,13 +128,13 @@ export function CurrencyPickerDropdown({
               autoCorrect={false}
               onChangeText={setSearch}
               placeholder="Search country or code"
-              placeholderTextColor="#98a2b3"
-              style={styles.searchInput}
+              placeholderTextColor={colors.subtext}
+              style={[styles.searchInput, { backgroundColor: colors.pillBg, color: colors.inputText },]}
               value={search}
             />
             {filteredSections.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>
+                <Text style={[styles.emptyText, { color: colors.subtext }]}>
                   {sections.length === 0
                     ? 'No currencies are available yet.'
                     : 'No currencies match your search.'}
@@ -150,20 +152,26 @@ export function CurrencyPickerDropdown({
                     onPress={() => onSelect(item)}
                     style={[
                       styles.currencyRow,
-                      item.code === selectedCode && styles.selectedRow,
+                      item.code === selectedCode &&  { backgroundColor: colors.softBtnBg },
                     ]}
                   >
-                    <Text style={styles.currencyCode}>{item.code}</Text>
-                    <Text numberOfLines={1} style={styles.countryName}>
+                    <Text style={[styles.currencyCode, { color: colors.subtext }]}>
+                      {item.code}
+                    </Text>
+                    <Text numberOfLines={1} style={[styles.countryName, { color: colors.subtext }]}>
                       {item.country}
                     </Text>
                     {item.code === selectedCode ? (
-                      <Text style={styles.selectedMark}>Selected</Text>
+                      <Text style={[styles.selectedMark, { color: colors.accent }]}>
+                        Selected
+                      </Text>
                     ) : null}
                   </Pressable>
                 )}
                 renderSectionHeader={({ section }) => (
-                  <Text style={styles.sectionTitle}>{section.title}</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.subtext }]}>
+                    {section.title}
+                  </Text>
                 )}
                 style={styles.list}
                 stickySectionHeadersEnabled={false}
@@ -209,7 +217,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   title: {
-    color: '#172033',
+    // color: '#172033',
     fontSize: 15,
     fontWeight: '700',
   },
@@ -227,6 +235,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   searchInput: {
+    height: 36,
     marginBottom: 4,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -234,6 +243,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f3f9',
     color: '#172033',
     fontSize: 14,
+    textAlignVertical: 'center',
   },
   list: {
     flex: 1,
@@ -241,7 +251,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     paddingTop: 10,
     paddingBottom: 5,
-    color: '#667085',
+    // color: '#667085',
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.8,

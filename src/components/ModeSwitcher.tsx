@@ -1,126 +1,104 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
 
-export type AppMode = 'convert' | 'charts';
+export type AppMode = 'convert' | 'charts' | 'settings';
 
 interface ModeSwitcherProps {
   mode: AppMode;
   onChange: (mode: AppMode) => void;
+  onHeightChange?: (height: number) => void;
 }
 
-export function ModeSwitcher({ mode, onChange }: ModeSwitcherProps) {
+const TABS: Array<{
+  key: AppMode;
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+}> = [
+  { key: 'convert', icon: 'swap-horizontal-outline', label: 'Convert' },
+  { key: 'charts', icon: 'bar-chart-outline', label: 'Charts' },
+  { key: 'settings', icon: 'settings-outline', label: 'Settings' },
+];
+
+export function ModeSwitcher({
+  mode,
+  onChange,
+  onHeightChange,
+}: ModeSwitcherProps) {
+  const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+
   return (
-    <View accessibilityLabel="Choose app section" style={styles.track}>
-      <ModeOption
-        icon="convert"
-        label="Convert"
-        mode="convert"
-        onChange={onChange}
-        selected={mode === 'convert'}
-      />
-      <ModeOption
-        icon="charts"
-        label="Charts"
-        mode="charts"
-        onChange={onChange}
-        selected={mode === 'charts'}
-      />
+    <View
+      accessibilityRole="tablist"
+      accessibilityLabel="Choose app section"
+      onLayout={(e) => onHeightChange?.(e.nativeEvent.layout.height)}
+      style={[
+        styles.bar,
+        {
+          backgroundColor: colors.navBg,
+          borderTopColor: colors.navBorder,
+          paddingBottom:
+            insets.bottom > 0 ? Math.max(insets.bottom - 12, 8) : 8,
+        },
+      ]}
+    >
+      {TABS.map((tab) => {
+        const isActive = mode === tab.key;
+        const iconName = (
+          isActive ? tab.icon.replace('-outline', '') : tab.icon
+        ) as keyof typeof Ionicons.glyphMap;
+        const tintColor = isActive ? colors.accent : colors.navInactive;
+
+        return (
+          <Pressable
+            key={tab.key}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isActive }}
+            onPress={() => onChange(tab.key)}
+            style={styles.tab}
+          >
+            <Ionicons name={iconName} size={20} color={tintColor} />
+            <Text
+              style={[
+                styles.label,
+                { color: tintColor },
+                isActive && styles.activeLabel,
+              ]}
+            >
+              {tab.label}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
 
-interface ModeOptionProps extends ModeSwitcherProps {
-  icon: AppMode;
-  label: string;
-  selected: boolean;
-}
-
-function ModeOption({
-  icon,
-  label,
-  mode,
-  onChange,
-  selected,
-}: ModeOptionProps) {
-  const color = selected ? '#5265e8' : '#667085';
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={() => onChange(mode)}
-      style={[styles.option, selected && styles.selectedOption]}
-    >
-      <Svg height={18} width={18} viewBox="0 0 20 20">
-        {icon === 'convert' ? (
-          <Path
-            d="M3 6h13l-3-3m3 3-3 3M17 14H4l3 3m-3-3 3-3"
-            fill="none"
-            stroke={color}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.7}
-          />
-        ) : (
-          <>
-            <Path
-              d="M3 3v14h14"
-              fill="none"
-              stroke={color}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-            />
-            <Path
-              d="m5 13 3.5-3.5 3 2L16 6"
-              fill="none"
-              stroke={color}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.8}
-            />
-          </>
-        )}
-      </Svg>
-      <Text style={[styles.optionText, selected && styles.selectedText]}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  track: {
+  bar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
-    gap: 4,
-    marginTop: 18,
-    padding: 4,
-    borderRadius: 14,
-    backgroundColor: '#e9ebf2',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 12,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
   },
-  option: {
+  tab: {
     flex: 1,
-    minHeight: 40,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    borderRadius: 11,
+    gap: 2,
   },
-  selectedOption: {
-    backgroundColor: '#ffffff',
-    shadowColor: '#172033',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    elevation: 2,
+  label: {
+    fontSize: 11,
+    fontWeight: '500',
   },
-  optionText: {
-    color: '#667085',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  selectedText: {
-    color: '#172033',
+  activeLabel: {
+    fontWeight: '700',
   },
 });

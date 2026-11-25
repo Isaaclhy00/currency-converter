@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>T-Rex Chomping Currencies (Light & Dark Mode)</title>
+  <style>
+    :root {
+      /* Light Mode Colors */
+      --bg-preview: #f5f7fb;
+      --dino-fill: #ffffff;
+      --dino-stroke: #111111;
+      --dino-eye-pupil: #111111;
+      --dino-nostril: #111111;
+      --mouth-interior: #1e2638;
+      --currency-color: #5265e8;
+      --btn-bg: #ffffff;
+      --btn-text: #172033;
+      --btn-border: #e5e7eb;
+    }
+
+    body.dark {
+      /* Dark Mode Colors (matching your dark logo HTML) */
+      --bg-preview: #141414;
+      --dino-fill: #2a2a2a;
+      --dino-stroke: #ffffff;
+      --dino-eye-pupil: #ffffff;
+      --dino-nostril: #181818;
+      --mouth-interior: #0d0d0d;
+      --currency-color: #7888ff;
+      --btn-bg: #242424;
+      --btn-text: #ffffff;
+      --btn-border: #3a3a3a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 32px;
+      background-color: var(--bg-preview);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      transition: background-color 0.25s ease;
+      overflow: hidden;
+    }
+
+    .theme-toggle {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    svg {
+      width: 320px;
+      height: 180px;
+      overflow: visible;
+      background: transparent;
+    }
+
+    /* Zoomed-in exact logo head, flipped horizontally so snout faces right */
+    .dino-head-group {
+      transform: translate(275px, -18px) scale(-1.55, 1.55);
+    }
+
+    /* Upper skull hinges slightly upward from the corner of the mouth (142, 80) */
+    .upper-head {
+      transform-origin: 142px 80px;
+      animation: chompUpper 0.55s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    }
+
+    /* Lower jaw hinges downward from the corner of the mouth (142, 80) */
+    .lower-jaw {
+      transform-origin: 142px 80px;
+      animation: chompLower 0.55s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    }
+
+    /* Stream of currencies flying from right into the dino's open mouth */
+    .currency-pellet {
+      font-size: 26px;
+      font-weight: 800;
+      fill: var(--currency-color);
+      text-anchor: middle;
+      dominant-baseline: central;
+      animation: streamToMouth 2.2s linear infinite;
+    }
+
+    .curr-1 { animation-delay: 0s; }
+    .curr-2 { animation-delay: -0.55s; }
+    .curr-3 { animation-delay: -1.1s; }
+    .curr-4 { animation-delay: -1.65s; }
+
+    /* Theme-aware SVG utility classes */
+    .svg-fill { fill: var(--dino-fill); }
+    .svg-stroke { stroke: var(--dino-stroke); }
+    .svg-pupil { fill: var(--dino-eye-pupil); }
+    .svg-nostril { fill: var(--dino-nostril); }
+    .svg-mouth { fill: var(--mouth-interior); }
+
+    /* --- Keyframes --- */
+
+    @keyframes chompUpper {
+      0%, 100% {
+        transform: rotate(0deg);
+      }
+      45% {
+        transform: rotate(10deg);
+      }
+      75% {
+        transform: rotate(-1.5deg);
+      }
+    }
+
+    @keyframes chompLower {
+      0%, 100% {
+        transform: rotate(0deg);
+      }
+      45% {
+        transform: rotate(-24deg);
+      }
+      75% {
+        transform: rotate(2deg);
+      }
+    }
+
+    @keyframes streamToMouth {
+      0% {
+        transform: translate(310px, 114px) scale(1);
+        opacity: 0;
+      }
+      12% {
+        transform: translate(280px, 111px) scale(1);
+        opacity: 1;
+      }
+      48% {
+        transform: translate(195px, 117px) scale(1);
+        opacity: 1;
+      }
+      72% {
+        transform: translate(132px, 114px) scale(0.85);
+        opacity: 1;
+      }
+      84% {
+        transform: translate(110px, 114px) scale(0.2);
+        opacity: 0;
+      }
+      100% {
+        transform: translate(110px, 114px) scale(0);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="theme-toggle" onclick="document.body.classList.toggle('dark')">
+    Toggle Light / Dark Mode
+  </button>
+
+  <svg viewBox="0 0 320 180" fill="none" xmlns="http://w3.org">
+
+    <!-- Stream of Currencies Flying Left into the Dino's Mouth -->
+    <text class="currency-pellet curr-1">$</text>
+    <text class="currency-pellet curr-2">€</text>
+    <text class="currency-pellet curr-3">¥</text>
+    <text class="currency-pellet curr-4">£</text>
+
+    <!-- Exact T-Rex Head from Your Logo (Flipped to Face Right) -->
+    <g class="dino-head-group">
+
+      <!-- 1. Dark Mouth Interior -->
+      <path
+        class="svg-mouth"
+        d="M 100 84 C 118 82, 138 78, 152 78 L 154 106 L 114 103 Z"
+      />
+
+      <!-- 2. Exact Lower Jaw with Extended Neck-Joint Overlap -->
+      <g class="lower-jaw">
+        <path
+          class="svg-fill"
+          d="
+            M 98 86
+            C 114 93, 132 90, 142 80
+            C 156 80, 168 92, 164 108
+            C 152 108, 134 107, 122 106
+            C 111 105, 102 97, 98 86
+            Z"
+          stroke="none"
+        />
+        <path
+          class="svg-stroke"
+          d="
+            M 98 86
+            C 102 97, 111 105, 122 106
+            C 134 107, 150 107, 164 106
+          "
+          stroke-width="5.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          fill="none"
+        />
+      </g>
+
+      <!-- 3. Exact Upper Head & Neck -->
+      <g class="upper-head">
+        <path
+          class="svg-fill"
+          d="
+            M 196.5 112
+            C 196.2 103, 196 95, 196 86
+            C 195 52, 182 32, 152 32
+            C 118 32, 94 42, 94 68
+            C 94 75, 95.5 81, 98 86
+            C 114 93, 132 90, 142 80
+            L 158 106
+            L 196.5 112
+            Z"
+          stroke="none"
+        />
+
+        <!-- Outer Skull & Smile Stroke -->
+        <path
+          class="svg-stroke"
+          d="
+            M 196.5 112
+            C 196.2 103, 196 95, 196 86
+            C 195 52, 182 32, 152 32
+            C 118 32, 94 42, 94 68
+            C 94 75, 95.5 81, 98 86
+            C 114 93, 132 90, 142 80
+          "
+          stroke-width="5.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          fill="none"
+        />
+
+        <!-- Exact Cheek Dimple -->
+        <path
+          class="svg-stroke"
+          d="M 139 77 C 142 79, 144 81, 145 84"
+          stroke-width="5.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          fill="none"
+        />
+
+        <!-- Exact Eye -->
+        <circle class="svg-stroke svg-fill" cx="151" cy="59" r="7.5" stroke-width="4.5" />
+        <circle class="svg-pupil" cx="153.5" cy="56.5" r="2.6" />
+
+        <!-- Exact Nostril -->
+        <circle class="svg-nostril" cx="109" cy="58" r="2.8" />
+      </g>
+
+    </g>
+
+  </svg>
+
+</body>
+</html>

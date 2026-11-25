@@ -17,6 +17,7 @@ import { CurrencyPickerDropdown } from './CurrencyPickerDropdown';
 import type { PickerAnchor } from './CurrencyPickerDropdown';
 import { getCurrencySections } from '../utils/currencyOptions';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 interface CurrencyRateListProps {
   baseCurrency: string;
@@ -35,6 +36,7 @@ export function CurrencyRateList({
   ratesLoading,
   onRetryRates,
 }: CurrencyRateListProps) {
+  const { colors } = useTheme();
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerAnchor, setPickerAnchor] = useState<PickerAnchor | null>(null);
   const baseButtonRef = useRef<ViewInstance>(null);
@@ -70,8 +72,8 @@ export function CurrencyRateList({
     <View style={styles.container}>
       <View style={styles.headingRow}>
         <View style={styles.headingCopy}>
-          <Text style={styles.title}>Currency rates</Text>
-          <Text style={styles.subtitle}>1 {baseCurrency} · 7-day trend</Text>
+          <Text style={[styles.title, { color: colors.titleText }]}>Currency rates</Text>
+          <Text style={[styles.subtitle, { color: colors.subtext }]}>1 {baseCurrency} · 7-day trend</Text>
         </View>
         <View style={styles.headerActions}>
           <Pressable
@@ -79,7 +81,7 @@ export function CurrencyRateList({
             accessibilityRole="button"
             disabled={ratesLoading}
             onPress={onRetryRates}
-            style={styles.iconButton}
+            style={[styles.iconButton, { backgroundColor: colors.softBtnBg }]}
           >
             <Text style={styles.refreshIcon}>↻</Text>
           </Pressable>
@@ -88,9 +90,9 @@ export function CurrencyRateList({
             accessibilityRole="button"
             onPress={openBasePicker}
             ref={baseButtonRef}
-            style={styles.baseButton}
+            style={[styles.baseButton, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
           >
-            <Text style={styles.baseButtonText}>{baseCurrency}</Text>
+            <Text style={[styles.baseButtonText, { color: colors.titleText }]}>{baseCurrency}</Text>
             {/* <Text style={styles.chevron}>⌄</Text> */}
             <Ionicons 
               name="chevron-down" 
@@ -105,18 +107,18 @@ export function CurrencyRateList({
       {ratesLoading && !rates ? (
         <View style={styles.messageState}>
           <ActivityIndicator />
-          <Text style={styles.messageText}>Loading exchange rates…</Text>
+          <Text style={[styles.messageText, { color: colors.subtext }]}>Loading exchange rates…</Text>
         </View>
       ) : ratesError && !rates ? (
         <View style={styles.messageState}>
-          <Text style={styles.errorText}>{ratesError}</Text>
+          <Text style={[styles.errorText, { color: colors.subtext }]}>{ratesError}</Text>
           <Pressable onPress={onRetryRates} style={styles.retryButton}>
-            <Text style={styles.retryText}>Try again</Text>
+            <Text style={[styles.retryText, { color: colors.accent }]}>Try again</Text>
           </Pressable>
         </View>
       ) : rates && baseRate ? (
         <>
-          <Text style={styles.rateDate}>
+          <Text style={[styles.rateDate, { color: colors.subtext }]}>
             {rates.source === 'cache'
               ? `Saved rates · ${new Date(rates.fetchedAt).toLocaleString()}`
               : `Updated ${rates.date} · ${formatFetchTime(
@@ -134,14 +136,14 @@ export function CurrencyRateList({
               </Text>
             </Pressable>
           ) : trendsQuery.isFetching ? (
-            <Text style={styles.trendNoticeText}>Loading 7-day trends…</Text>
+            <Text style={[styles.trendNoticeText, { color: colors.subtext }]}>Loading 7-day trends…</Text>
           ) : null}
           <FlatList
             contentContainerStyle={styles.listContent}
             data={currencies}
             keyExtractor={(item) => item.code}
             ListEmptyComponent={
-              <Text style={styles.emptyText}>
+              <Text style={[styles.emptyText, { color: colors.subtext }]}>
                 No currencies are available for this base currency.
               </Text>
             }
@@ -202,6 +204,7 @@ interface CurrencyRateRowProps {
 }
 
 function CurrencyRateRow({ currency, rate, trend }: CurrencyRateRowProps) {
+  const { colors } = useTheme();
   const color =
     trend?.direction === 'up'
       ? '#16804a'
@@ -212,27 +215,31 @@ function CurrencyRateRow({ currency, rate, trend }: CurrencyRateRowProps) {
     ? `${trend.direction} ${Math.abs(trend.changePercent).toFixed(2)} percent over 7 days`
     : 'trend unavailable';
 
-  return (
+    return (
     <View
       accessible
       accessibilityLabel={`${currency.code}, ${currency.country}, ${rate.toLocaleString(
         undefined,
         { maximumSignificantDigits: 6 },
       )}. ${accessibilityTrend}`}
-      style={styles.rateRow}
+      style={[styles.rateRow, { backgroundColor: colors.cardBg }]}
     >
       <View style={styles.currencyDetails}>
-        <Text style={styles.currencyCode}>{currency.code}</Text>
-        <Text numberOfLines={1} style={styles.countryName}>
+        <Text style={[styles.currencyCode, { color: colors.titleText }]}>
+          {currency.code}
+        </Text>
+        <Text numberOfLines={1} style={[styles.countryName, { color: colors.subtext }]}>
           {currency.country}
         </Text>
       </View>
       <View style={styles.rateDetails}>
         <View style={styles.rateValue}>
-          <Text style={styles.rateAmount}>
+          <Text style={[styles.rateAmount, { color: colors.titleText }]}>
             {rate.toLocaleString(undefined, { maximumSignificantDigits: 6 })}
           </Text>
-          <Text style={styles.rateCode}>{currency.code}</Text>
+          <Text style={[styles.rateCode, { color: colors.subtext }]}>
+            {currency.code}
+          </Text>
         </View>
         <TrendIcon color={color} direction={trend?.direction} />
       </View>

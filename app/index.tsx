@@ -24,8 +24,17 @@ import { useRates } from '../src/hooks/useRates';
 import { getCurrencySections } from '../src/utils/currencyOptions';
 import { convert, getDecimalPlaces } from '../src/utils/convert';
 import { Ionicons } from '@expo/vector-icons';
+import { TrexAnimatedLogo } from '../assets/logo/animated_logo';
+import {
+  CurrencyConverter,
+  CurrencyConverterHandle,
+} from '../src/components/CurrencyConverter';
+import { SettingsScreen } from '../src/components/Settings';
+import { useTheme } from '../src/context/ThemeContext';
 
 export default function ConverterScreen() {
+  const [defaultBaseCurrency, setDefaultBaseCurrency] = useState('USD');
+  const [defaultToCurrency, setDefaultToCurrency] = useState('EUR');
   const [amount, setAmount] = useState('1');
   const [fromCurrency, setFromCurrency] = useState('USD');
   const [toCurrency, setToCurrency] = useState('EUR');
@@ -39,7 +48,9 @@ export default function ConverterScreen() {
     () => getCurrencySections(ratesQuery.data?.rates ?? {}),
     [ratesQuery.data?.rates],
   );
-
+  const [navHeight, setNavHeight] = useState(60);
+  const converterRef = useRef<CurrencyConverterHandle>(null);
+  const { isDarkMode, setIsDarkMode } = useTheme();
   const numericAmount = amount.trim() === '' ? Number.NaN : Number(amount);
   const fromRate = ratesQuery.data?.rates[fromCurrency];
   const toRate = ratesQuery.data?.rates[toCurrency];
@@ -50,197 +61,24 @@ export default function ConverterScreen() {
       : null;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <Text style={styles.eyebrow}>CURRENCY CONVERTER</Text>
-        <ModeSwitcher
-          mode={activeMode}
-          onChange={(mode) => {
-            Keyboard.dismiss();
-            setActiveMode(mode);
-            setIsAmountFocused(false);
-            setPickerTarget(null);
-            setPickerAnchor(null);
-          }}
-        />
+    <SafeAreaView style={[
+      styles.safeArea,
+      { backgroundColor: isDarkMode ? '#000000' : '#f5f7fb' },
+    ]}>
+       <View style={[styles.container, { paddingBottom: navHeight - 10 }]}>
+          <View style={styles.headerRow}>
+            <TrexAnimatedLogo size={36} />
+            <Text style={styles.eyebrow}>T-REX</Text>
+          </View>
 
         {activeMode === 'convert' ? (
-          <TouchableWithoutFeedback
-            accessible={false}
-            onPress={Keyboard.dismiss}
-          >
-            <View style={styles.converterContent}>
-              <View style={styles.card}>
-                <View style={styles.amountColumns}>
-                  <View style={styles.amountColumn}>
-                    <Text style={styles.label}>From: </Text>
-                    <View style={styles.amountInputRow}>
-                      <TextInput
-                        accessibilityLabel="Amount to convert"
-                        blurOnSubmit
-                        keyboardType="decimal-pad"
-                        onBlur={() => {
-                          setIsAmountFocused(false);
-                          setAmount((currentAmount) =>
-                            currentAmount.trim() === '' ? '1' : currentAmount,
-                          );
-                        }}
-                        onChangeText={setAmount}
-                        onFocus={() => setIsAmountFocused(true)}
-                        onSubmitEditing={Keyboard.dismiss}
-                        placeholder="Amount"
-                        returnKeyType="done"
-                        style={styles.input}
-                        value={amount}
-                      />
-                      {isAmountFocused && amount !== '' ? (
-                        <Pressable
-                          accessibilityLabel="Clear amount"
-                          accessibilityRole="button"
-                          hitSlop={8}
-                          onPress={() => setAmount('')}
-                          style={styles.clearAmountButton}
-                        >
-                          {/* <Text style={styles.clearAmountText}>×</Text> */}
-                          <Ionicons name="close-circle" size={20} color="#74747C" />
-                        </Pressable>
-                      ) : null}
-                    </View>
-                  </View>
-                  <View style={styles.amountColumn}>
-                    <Text style={styles.label}>To: </Text>
-                    <Text
-                      adjustsFontSizeToFit
-                      numberOfLines={1}
-                      style={[styles.result, styles.resultAmount]}
-                    >
-                      {result === null
-                        ? '—'
-                        : result.toLocaleString(undefined, {
-                            minimumFractionDigits: getDecimalPlaces(toCurrency),
-                            maximumFractionDigits: getDecimalPlaces(toCurrency),
-                          })}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.currencyRow}>
-                  <CurrencyButton
-                    accessibilityLabel="Source currency"
-                    disabled={!ratesQuery.data}
-                    onPress={(anchor) => {
-                      setPickerTarget('from');
-                      setPickerAnchor(anchor);
-                    }}
-                    value={fromCurrency}
-                  />
-                  <Pressable
-                    accessibilityHint="Swap the source and target currencies"
-                    accessibilityLabel="Swap currencies"
-                    accessibilityRole="button"
-                    disabled={!ratesQuery.data}
-                    onPress={() => {
-                      Keyboard.dismiss();
-                      setFromCurrency(toCurrency);
-                      setToCurrency(fromCurrency);
-                    }}
-                    style={({ pressed }) => [
-                      styles.swapButton,
-                      pressed && styles.swapButtonPressed,
-                      !ratesQuery.data && styles.disabledButton,
-                    ]}
-                  >
-                    <Text style={styles.swapArrow}>⇄</Text>
-                  </Pressable>
-                  <CurrencyButton
-                    accessibilityLabel="Target currency"
-                    disabled={!ratesQuery.data}
-                    onPress={(anchor) => {
-                      setPickerTarget('to');
-                      setPickerAnchor(anchor);
-                    }}
-                    value={toCurrency}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.rateSummaryRow}>
-                <View style={styles.rateSummaryContent}>
-                  {ratesQuery.isPending ? (
-                    <View style={styles.statusRow}>
-                      <ActivityIndicator size="small" />
-                      <Text style={styles.statusText}>
-                        Loading exchange rates…
-                      </Text>
-                    </View>
-                  ) : ratesQuery.isError ? (
-                    <View style={styles.messageBox}>
-                      <Text style={styles.errorText}>
-                        {ratesQuery.error.message ||
-                          'Unable to load exchange rates.'}
-                      </Text>
-                      <Pressable
-                        onPress={() => {
-                          Keyboard.dismiss();
-                          ratesQuery.refetch();
-                        }}
-                        style={styles.retryButton}
-                      >
-                        <Text style={styles.retryText}>Try again</Text>
-                      </Pressable>
-                    </View>
-                  ) : result === null ? (
-                    <Text style={styles.hint}>
-                      Enter a valid amount and supported three-letter currency
-                      codes.
-                    </Text>
-                  ) : (
-                    <View style={styles.rateInfo}>
-                      <Text style={styles.rateText}>
-                        {ratesQuery.data?.source === 'cache'
-                          ? 'Offline: using saved rates'
-                          : ratesQuery.data
-                            ? `Updated ${ratesQuery.data.date} · ${formatFetchTime(
-                                ratesQuery.data.fetchedAt,
-                              )}`
-                            : ''}
-                      </Text>
-                      {ratesQuery.data?.source === 'cache' ? (
-                        <Text style={styles.rateText}>
-                          Saved{' '}
-                          {new Date(
-                            ratesQuery.data.fetchedAt,
-                          ).toLocaleString()}
-                        </Text>
-                      ) : null}
-                    </View>
-                  )}
-                </View>
-                <Pressable
-                  accessibilityLabel="Refresh rates"
-                  accessibilityRole="button"
-                  disabled={ratesQuery.isFetching}
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    ratesQuery.refetch();
-                  }}
-                  style={({ pressed }) => [
-                    styles.refreshButton,
-                    pressed && styles.refreshButtonPressed,
-                    ratesQuery.isFetching && styles.disabledButton,
-                  ]}
-                >
-                  <Text style={styles.refreshIcon}>↻</Text>
-                  <Text style={styles.refreshText}>
-                    {ratesQuery.isFetching ? 'Refreshing' : 'Refresh'}
-                  </Text>
-                </Pressable>
-              </View>
-
-              <RateHistoryChart base={fromCurrency} quote={toCurrency} />
-            </View>
-          </TouchableWithoutFeedback>
-        ) : (
+          <CurrencyConverter 
+            ref={converterRef} 
+            ratesQuery={ratesQuery} 
+            defaultFromCurrency={defaultBaseCurrency}
+            defaultToCurrency={defaultToCurrency}
+          />
+        ) : activeMode === 'charts' ? (
           <CurrencyRateList
             baseCurrency={chartBaseCurrency}
             onBaseCurrencyChange={setChartBaseCurrency}
@@ -251,28 +89,30 @@ export default function ConverterScreen() {
               ratesQuery.refetch();
             }}
           />
+        ) : (
+          <SettingsScreen
+            defaultBaseCurrency={defaultBaseCurrency}
+            onDefaultBaseCurrencyChange={(code) => {
+              setDefaultBaseCurrency(code);
+              setChartBaseCurrency(code);
+            }}
+            defaultToCurrency={defaultToCurrency}
+            onDefaultToCurrencyChange={setDefaultToCurrency}
+          />
         )}
-        <CurrencyPickerDropdown
-          anchor={pickerAnchor}
-          onClose={() => {
-            setPickerTarget(null);
-            setPickerAnchor(null);
-          }}
-          onSelect={(currency: CurrencyOption) => {
-            if (pickerTarget === 'from') {
-              setFromCurrency(currency.code);
-            } else if (pickerTarget === 'to') {
-              setToCurrency(currency.code);
-            }
-            setPickerTarget(null);
-            setPickerAnchor(null);
-          }}
-          sections={currencySections}
-          selectedCode={pickerTarget === 'from' ? fromCurrency : toCurrency}
-          title={pickerTarget === 'from' ? 'Convert from' : 'Convert to'}
-          visible={pickerTarget !== null}
-        />
       </View>
+
+      <ModeSwitcher
+        mode={activeMode}
+        
+        onChange={(mode) => {
+          Keyboard.dismiss();
+          setActiveMode(mode);
+          setIsAmountFocused(false);
+          setPickerTarget(null);
+          setPickerAnchor(null);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -329,18 +169,27 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#f5f7fb',
+    paddingTop: 36,
+    paddingBottom: 16,
   },
   container: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 36,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   converterContent: {
     flex: 1,
   },
   eyebrow: {
-    color: '#5265e8',
-    fontSize: 12,
+    color: '#555555',
+    // color: '#5265e8',
+    fontSize: 26,
     fontWeight: '700',
     letterSpacing: 1.2,
   },
@@ -356,7 +205,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   card: {
-    marginTop: 32,
+    marginTop: 14,
     padding: 20,
     borderRadius: 20,
     backgroundColor: '#ffffff',

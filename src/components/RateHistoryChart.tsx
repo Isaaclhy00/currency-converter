@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  ActivityIndicator,
   LayoutChangeEvent,
   Pressable,
   StyleSheet,
@@ -10,6 +9,8 @@ import {
 import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 import { useRateHistory } from '../hooks/useRateHistory';
 import { RateHistoryPoint } from '../api/history';
+import { TrexChompLoader } from '../../assets/loading/loading_animation';
+import { useTheme } from '../context/ThemeContext';
 
 interface RateHistoryChartProps {
   base: string;
@@ -22,6 +23,7 @@ const PLOT_LEFT = 58;
 const PLOT_RIGHT = 12;
 
 export function RateHistoryChart({ base, quote }: RateHistoryChartProps) {
+  const { isDarkMode, colors } = useTheme();
   const [chartSize, setChartSize] = useState({
     width: 0,
     height: MIN_CHART_HEIGHT,
@@ -39,12 +41,12 @@ export function RateHistoryChart({ base, quote }: RateHistoryChartProps) {
   };
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colors.cardBg }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Rate history</Text>
         <Text style={styles.period}>30 DAYS</Text>
       </View>
-      <Text style={styles.pairSummary}>
+      <Text style={[styles.pairSummary, { color: colors.subtext }]}>
         {latest
           ? `1 ${base} = ${formatRate(latest.rate)} ${quote}`
           : `${base} to ${quote}`}
@@ -52,21 +54,18 @@ export function RateHistoryChart({ base, quote }: RateHistoryChartProps) {
 
       {historyQuery.isPending ? (
         <View style={styles.message}>
-          <View style={styles.loadingRow}>
-            <ActivityIndicator size="small" />
-            <Text style={styles.messageText}>Loading rate history…</Text>
-          </View>
+          <TrexChompLoader width={180} theme={isDarkMode ? 'dark' : 'light'} />
         </View>
       ) : historyQuery.isError ? (
         <View style={styles.message}>
-          <Text style={styles.errorText}>
+          <Text style={[styles.errorText, { color: colors.accent }]}>
             Historical rates are unavailable for this currency pair.
           </Text>
           <Pressable
             accessibilityRole="button"
             onPress={() => historyQuery.refetch()}
           >
-            <Text style={styles.retryText}>Try again</Text>
+            <Text style={[styles.retryText, { color: colors.accent }]}>Try again</Text>
           </Pressable>
         </View>
       ) : points ? (
@@ -83,19 +82,19 @@ export function RateHistoryChart({ base, quote }: RateHistoryChartProps) {
             ) : null}
           </View>
           <View style={styles.dateLabels}>
-            <Text style={styles.dateText}>{formatDate(points[0])}</Text>
-            <Text style={styles.dateText}>{formatDate(points[points.length - 1])}</Text>
+            <Text style={[styles.dateText, { color: colors.subtext }]}>{formatDate(points[0])}</Text>
+            <Text style={[styles.dateText, { color: colors.subtext }]}>{formatDate(points[points.length - 1])}</Text>
           </View>
           <View style={styles.footer}>
-            <Text style={styles.footerText}>
+            <Text style={[styles.footerText, { color: colors.subtext }]}>
               Low {formatRate(minimum)} {quote}
             </Text>
-            <Text style={styles.footerText}>
+            <Text style={[styles.footerText, { color: colors.subtext }]}>
               High {formatRate(maximum)} {quote}
             </Text>
           </View>
           {historyQuery.data.source === 'cache' ? (
-            <Text style={styles.cacheNote}>Offline: showing saved history</Text>
+            <Text style={[styles.cacheNote, { color: colors.subtext }]}>Offline: showing saved history</Text>
           ) : null}
         </>
       ) : null}
@@ -118,6 +117,7 @@ function HistoryPlot({
   points,
   width,
 }: HistoryPlotProps) {
+  const { colors } = useTheme();
   const plotWidth = width - PLOT_LEFT - PLOT_RIGHT;
   const plotBottom = height - 16;
   const plotHeight = plotBottom - PLOT_TOP;
@@ -270,15 +270,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-  },
-  loadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  messageText: {
-    color: '#667085',
-    fontSize: 13,
   },
   errorText: {
     color: '#667085',

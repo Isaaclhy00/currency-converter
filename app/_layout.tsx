@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { loadCachedRates, ratesQueryKey } from '../src/hooks/useRates';
+import { ThemeProvider } from '../src/context/ThemeContext';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,10 +49,11 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <StatusBar style="auto" />
-      {ready ? (
-        startupError ? (
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <StatusBar style="auto" />
+        {ready ? (
+          startupError ? (
           <View style={styles.centered}>
             <Text style={styles.errorTitle}>Could not load saved rates</Text>
             <Text style={styles.errorMessage}>{startupError}</Text>
@@ -59,15 +61,16 @@ export default function RootLayout() {
               Restart the app to try loading saved data again.
             </Text>
           </View>
-        ) : (
-          <Stack screenOptions={{ headerShown: false }} />
-        )
-      ) : (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" />
-        </View>
-      )}
-    </QueryClientProvider>
+          ) : (
+            <Stack screenOptions={{ headerShown: false }} />
+          )
+          ) : (
+            <View style={styles.centered}>
+              <ActivityIndicator size="large" />
+            </View>
+          )}
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 
