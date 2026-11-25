@@ -50,23 +50,26 @@ export default function ConverterScreen() {
       : null;
 
   return (
-    <TouchableWithoutFeedback accessible={false} onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <Text style={styles.eyebrow}>CURRENCY CONVERTER</Text>
-          <ModeSwitcher
-            mode={activeMode}
-            onChange={(mode) => {
-              Keyboard.dismiss();
-              setActiveMode(mode);
-              setIsAmountFocused(false);
-              setPickerTarget(null);
-              setPickerAnchor(null);
-            }}
-          />
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.eyebrow}>CURRENCY CONVERTER</Text>
+        <ModeSwitcher
+          mode={activeMode}
+          onChange={(mode) => {
+            Keyboard.dismiss();
+            setActiveMode(mode);
+            setIsAmountFocused(false);
+            setPickerTarget(null);
+            setPickerAnchor(null);
+          }}
+        />
 
-          {activeMode === 'convert' ? (
-            <>
+        {activeMode === 'convert' ? (
+          <TouchableWithoutFeedback
+            accessible={false}
+            onPress={Keyboard.dismiss}
+          >
+            <View style={styles.converterContent}>
               <View style={styles.card}>
                 <View style={styles.amountColumns}>
                   <View style={styles.amountColumn}>
@@ -235,20 +238,20 @@ export default function ConverterScreen() {
               </View>
 
               <RateHistoryChart base={fromCurrency} quote={toCurrency} />
-            </>
-          ) : (
-            <CurrencyRateList
-              baseCurrency={chartBaseCurrency}
-              onBaseCurrencyChange={setChartBaseCurrency}
-              rates={ratesQuery.data}
-              ratesError={ratesQuery.error?.message ?? null}
-              ratesLoading={ratesQuery.isPending}
-              onRetryRates={() => {
-                ratesQuery.refetch();
-              }}
-            />
-          )}
-        </View>
+            </View>
+          </TouchableWithoutFeedback>
+        ) : (
+          <CurrencyRateList
+            baseCurrency={chartBaseCurrency}
+            onBaseCurrencyChange={setChartBaseCurrency}
+            rates={ratesQuery.data}
+            ratesError={ratesQuery.error?.message ?? null}
+            ratesLoading={ratesQuery.isPending}
+            onRetryRates={() => {
+              ratesQuery.refetch();
+            }}
+          />
+        )}
         <CurrencyPickerDropdown
           anchor={pickerAnchor}
           onClose={() => {
@@ -269,8 +272,8 @@ export default function ConverterScreen() {
           title={pickerTarget === 'from' ? 'Convert from' : 'Convert to'}
           visible={pickerTarget !== null}
         />
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -331,6 +334,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     paddingTop: 36,
+  },
+  converterContent: {
+    flex: 1,
   },
   eyebrow: {
     color: '#5265e8',

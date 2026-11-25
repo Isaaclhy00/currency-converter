@@ -1,14 +1,26 @@
 {
   "expo": {
-    "name": "T-rex",
-    "slug": "t-rex",
-    "scheme": "t-rex",
+    "name": "T-REX Currency Converter",
+    "slug": "t-rex-currency-converter",
+    "scheme": "t-rex-currency-converter",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/images/t-rex-app-icon.png",
     "userInterfaceStyle": "automatic",
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
     "experiments": {
       "typedRoutes": true
+    },
+    "ios": {
+      "bundleIdentifier": "com.isaaclhy.t-rex-currency-converter",
+      "supportsTablet": false,
+      "icon": "./assets/images/t-rex-app-icon.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     }
   }
 }
