@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   LayoutChangeEvent,
   Pressable,
@@ -15,6 +16,7 @@ import { useTheme } from '../context/ThemeContext';
 interface RateHistoryChartProps {
   base: string;
   quote: string;
+  onPress?: () => void;
 }
 
 const MIN_CHART_HEIGHT = 178;
@@ -22,13 +24,18 @@ const PLOT_TOP = 12;
 const PLOT_LEFT = 58;
 const PLOT_RIGHT = 12;
 
-export function RateHistoryChart({ base, quote }: RateHistoryChartProps) {
+export function RateHistoryChart({ base, quote, onPress }: RateHistoryChartProps) {
+  const router = useRouter();
+  const routeParams = useMemo(
+    () => JSON.stringify({ fromCurrency: base, toCurrency: quote }),
+    [base, quote],
+  );
   const { isDarkMode, colors } = useTheme();
   const [chartSize, setChartSize] = useState({
     width: 0,
     height: MIN_CHART_HEIGHT,
   });
-  const historyQuery = useRateHistory(base, quote);
+  const historyQuery = useRateHistory(base, quote, true, '1M');
   const points = historyQuery.data?.points;
   const values = points?.map(({ rate }) => rate) ?? [];
   const minimum = values.length > 0 ? Math.min(...values) : 0;
@@ -41,10 +48,21 @@ export function RateHistoryChart({ base, quote }: RateHistoryChartProps) {
   };
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.cardBg }]}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Rate history</Text>
-        <Text style={styles.period}>30 DAYS</Text>
+    <Pressable
+      accessibilityLabel={`Open rate history for ${base} to ${quote}`}
+      accessibilityRole="button"
+      onPress={() => {
+        onPress?.();
+        router.navigate({
+          pathname: '/rate-history-detail',
+          params: JSON.parse(routeParams),
+        });
+      }}
+      style={[styles.card, { backgroundColor: colors.cardBg }]}
+    >
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.title, { color: colors.titleText }]}>Rate history</Text>
+        <Text style={[styles.period, { color: colors.subtext }]}>30 DAYS</Text>
       </View>
       <Text style={[styles.pairSummary, { color: colors.subtext }]}>
         {latest
@@ -98,7 +116,7 @@ export function RateHistoryChart({ base, quote }: RateHistoryChartProps) {
           ) : null}
         </>
       ) : null}
-    </View>
+    </Pressable>
   );
 }
 

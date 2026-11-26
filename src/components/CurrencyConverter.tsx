@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import type { ViewInstance } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { CurrencyOption } from '../constants/currencies';
 import {
@@ -21,6 +22,8 @@ import { useRates } from '../hooks/useRates';
 import { getCurrencySections } from '../utils/currencyOptions';
 import { convert, getDecimalPlaces } from '../utils/convert';
 import { useTheme } from '../context/ThemeContext';
+import * as Haptics from 'expo-haptics';
+
 
 export interface CurrencyConverterHandle {
   resetUIState: () => void;
@@ -43,6 +46,7 @@ export const CurrencyConverter = forwardRef<
   const [isAmountFocused, setIsAmountFocused] = useState(false);
   const [pickerTarget, setPickerTarget] = useState<'from' | 'to' | null>(null);
   const [pickerAnchor, setPickerAnchor] = useState<PickerAnchor | null>(null);
+  const router = useRouter();
 
   const currencySections = useMemo(
     () => getCurrencySections(ratesQuery.data?.rates ?? {}),
@@ -66,17 +70,38 @@ export const CurrencyConverter = forwardRef<
       ? convert(numericAmount, fromRate, toRate, toCurrency)
       : null;
 
+  const openRateHistoryDetail = () => {
+    const currentRate =
+      fromRate && toRate ? toRate / fromRate : undefined;
+
+    Keyboard.dismiss();
+    // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({
+      pathname: '/rate-history-detail',
+      params: {
+        fromCurrency,
+        toCurrency,
+        ...(currentRate !== undefined && Number.isFinite(currentRate)
+          ? { currentRate: String(currentRate) }
+          : {}),
+      },
+    });
+  };
+
   useEffect(() => {
-    setFromCurrency(defaultFromCurrency);
+    setFromCurrency(defaultFromCurrency ?? 'USD');
   }, [defaultFromCurrency]);
 
   useEffect(() => {
-    setToCurrency(defaultToCurrency);
+    setToCurrency(defaultToCurrency ?? 'EUR');
   }, [defaultToCurrency]);
   return (
     <>
       <TouchableWithoutFeedback accessible={false} onPress={Keyboard.dismiss}>
         <View style={styles.converterContent}>
+          <Text style={[styles.headerTitle, { color: colors.titleText }]}>
+            Convert
+          </Text>
           <View style={[styles.card, { backgroundColor: colors.cardBg }]}>
             <View style={styles.amountColumns}>
               <View style={styles.amountColumn}>
@@ -151,6 +176,7 @@ export const CurrencyConverter = forwardRef<
                 accessibilityRole="button"
                 disabled={!ratesQuery.data}
                 onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   Keyboard.dismiss();
                   setFromCurrency(toCurrency);
                   setToCurrency(fromCurrency);
@@ -231,6 +257,7 @@ export const CurrencyConverter = forwardRef<
               onPress={() => {
                 Keyboard.dismiss();
                 ratesQuery.refetch();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
               style={({ pressed }) => [
                 styles.refreshButton,
@@ -245,13 +272,18 @@ export const CurrencyConverter = forwardRef<
               </Text>
             </Pressable>
           </View>
-
-          <RateHistoryChart base={fromCurrency} quote={toCurrency} />
+        
+          <RateHistoryChart
+            base={fromCurrency}
+            quote={toCurrency}
+            onPress={openRateHistoryDetail}
+          />
         </View>
       </TouchableWithoutFeedback>
 
       <CurrencyPickerDropdown
         anchor={pickerAnchor}
+        defaultCodes={[defaultFromCurrency ?? 'USD', defaultToCurrency ?? 'EUR']}
         onClose={() => {
           setPickerTarget(null);
           setPickerAnchor(null);
@@ -329,6 +361,12 @@ function CurrencyButton({
 const styles = StyleSheet.create({
   converterContent: {
     flex: 1,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    marginTop: 12,
   },
   card: {
     marginTop: 14,

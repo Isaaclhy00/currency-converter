@@ -17,7 +17,9 @@ import { CurrencyPickerDropdown } from './CurrencyPickerDropdown';
 import type { PickerAnchor } from './CurrencyPickerDropdown';
 import { getCurrencySections } from '../utils/currencyOptions';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../context/ThemeContext';
+import * as Haptics from 'expo-haptics';
 
 interface CurrencyRateListProps {
   baseCurrency: string;
@@ -37,6 +39,7 @@ export function CurrencyRateList({
   onRetryRates,
 }: CurrencyRateListProps) {
   const { colors } = useTheme();
+  const router = useRouter();
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerAnchor, setPickerAnchor] = useState<PickerAnchor | null>(null);
   const baseButtonRef = useRef<ViewInstance>(null);
@@ -61,6 +64,20 @@ export function CurrencyRateList({
   );
   const baseRate = rates?.rates[baseCurrency];
 
+  const openRateHistoryDetail = (quoteCurrency: string, rate: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({
+      pathname: '/rate-history-detail',
+      params: {
+        fromCurrency: baseCurrency,
+        toCurrency: quoteCurrency,
+        ...(Number.isFinite(rate) && rate > 0
+          ? { currentRate: String(rate) }
+          : {}),
+      },
+    });
+  };
+
   const openBasePicker = () => {
     baseButtonRef.current?.measureInWindow((x, y, width, height) => {
       setPickerAnchor({ x, y, width, height });
@@ -73,14 +90,17 @@ export function CurrencyRateList({
       <View style={styles.headingRow}>
         <View style={styles.headingCopy}>
           <Text style={[styles.title, { color: colors.titleText }]}>Currency rates</Text>
-          <Text style={[styles.subtitle, { color: colors.subtext }]}>1 {baseCurrency} · 7-day trend</Text>
+          <Text style={[styles.subtitle, { color: colors.subtext }]}>{baseCurrency} · 7-day trend</Text>
         </View>
         <View style={styles.headerActions}>
           <Pressable
             accessibilityLabel="Refresh exchange rates"
             accessibilityRole="button"
             disabled={ratesLoading}
-            onPress={onRetryRates}
+            onPress={() => {
+              onRetryRates();
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
             style={[styles.iconButton, { backgroundColor: colors.softBtnBg }]}
           >
             <Text style={styles.refreshIcon}>↻</Text>
@@ -112,7 +132,10 @@ export function CurrencyRateList({
       ) : ratesError && !rates ? (
         <View style={styles.messageState}>
           <Text style={[styles.errorText, { color: colors.subtext }]}>{ratesError}</Text>
-          <Pressable onPress={onRetryRates} style={styles.retryButton}>
+          <Pressable onPress={() => {
+            onRetryRates();
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }} style={styles.retryButton}>
             <Text style={[styles.retryText, { color: colors.accent }]}>Try again</Text>
           </Pressable>
         </View>
@@ -156,6 +179,7 @@ export function CurrencyRateList({
                   currency={item}
                   rate={rate}
                   trend={trend}
+                  onPress={() => openRateHistoryDetail(item.code, rate)}
                 />
               );
             }}
@@ -201,9 +225,10 @@ interface CurrencyRateRowProps {
   currency: CurrencyOption;
   rate: number;
   trend: CurrencyTrend | undefined;
+  onPress?: () => void;
 }
 
-function CurrencyRateRow({ currency, rate, trend }: CurrencyRateRowProps) {
+function CurrencyRateRow({ currency, rate, trend, onPress }: CurrencyRateRowProps) {
   const { colors } = useTheme();
   const color =
     trend?.direction === 'up'
@@ -216,12 +241,14 @@ function CurrencyRateRow({ currency, rate, trend }: CurrencyRateRowProps) {
     : 'trend unavailable';
 
     return (
-    <View
+    <Pressable
       accessible
+      accessibilityRole="button"
       accessibilityLabel={`${currency.code}, ${currency.country}, ${rate.toLocaleString(
         undefined,
         { maximumSignificantDigits: 6 },
       )}. ${accessibilityTrend}`}
+      onPress={onPress}
       style={[styles.rateRow, { backgroundColor: colors.cardBg }]}
     >
       <View style={styles.currencyDetails}>
@@ -243,7 +270,7 @@ function CurrencyRateRow({ currency, rate, trend }: CurrencyRateRowProps) {
         </View>
         <TrendIcon color={color} direction={trend?.direction} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -292,7 +319,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     minHeight: 0,
-    paddingTop: 24,
+    paddingTop: 12,
   },
   headingRow: {
     flexDirection: 'row',

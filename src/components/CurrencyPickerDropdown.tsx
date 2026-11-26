@@ -23,6 +23,7 @@ export interface PickerAnchor {
 
 interface CurrencyPickerDropdownProps {
   anchor: PickerAnchor | null;
+  defaultCodes?: string[];
   onClose: () => void;
   onSelect: (currency: CurrencyOption) => void;
   sections: CurrencySection[];
@@ -33,6 +34,7 @@ interface CurrencyPickerDropdownProps {
 
 export function CurrencyPickerDropdown({
   anchor,
+  defaultCodes = [],
   onClose,
   onSelect,
   sections,
@@ -49,13 +51,71 @@ export function CurrencyPickerDropdown({
     }
   }, [visible]);
 
+  // const filteredSections = useMemo(() => {
+  //   const query = search.trim().toLocaleLowerCase();
+  //   if (!query) {
+  //     return sections;
+  //   }
+
+  //   return sections
+  //     .map((section) => ({
+  //       ...section,
+  //       data: section.data.filter(
+  //         ({ code, country }) =>
+  //           code.toLocaleLowerCase().includes(query) ||
+  //           country.toLocaleLowerCase().includes(query),
+  //       ),
+  //     }))
+  //     .filter((section) => section.data.length > 0);
+  // }, [search, sections]);
   const filteredSections = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase();
-    if (!query) {
-      return sections;
+    if (sections.length === 0) {
+      return [];
     }
 
-    return sections
+    // 1. Deduplicate default codes while preserving [defaultFrom, defaultTo] order
+    const orderedDefaults = Array.from(new Set(defaultCodes)).filter(Boolean);
+    const defaultSet = new Set(orderedDefaults);
+
+    // 2. Look up the CurrencyOption objects for the defaults across all sections
+    const allCurrencies = sections.flatMap((s) => s.data);
+    const defaultItems = orderedDefaults
+      .map((code) => allCurrencies.find((item) => item.code === code))
+      .filter((item): item is CurrencyOption => Boolean(item));
+
+    // 3. Place defaults at the top of the first (Pinned) section, followed by the rest of the pinned items
+    const [pinnedSection, ...otherSections] = sections;
+    const updatedPinnedSection: CurrencySection = {
+      ...pinnedSection,
+      data: [
+        ...defaultItems,
+        ...pinnedSection.data.filter((item) => !defaultSet.has(item.code)),
+      ],
+    };
+
+    // 4. Remove defaults from any lower sections only if they weren't already in pinnedSection
+    // (Prevents duplicate keyExtractor errors if a default wasn't originally pinned)
+    const pinnedCodes = new Set(pinnedSection.data.map((item) => item.code));
+    const newlyPromotedCodes = new Set(
+      orderedDefaults.filter((code) => !pinnedCodes.has(code)),
+    );
+
+    const updatedOtherSections = otherSections
+      .map((section) => ({
+        ...section,
+        data: section.data.filter((item) => !newlyPromotedCodes.has(item.code)),
+      }))
+      .filter((section) => section.data.length > 0);
+
+    const orderedSections = [updatedPinnedSection, ...updatedOtherSections];
+
+    // 5. Apply search filter
+    const query = search.trim().toLocaleLowerCase();
+    if (!query) {
+      return orderedSections;
+    }
+
+    return orderedSections
       .map((section) => ({
         ...section,
         data: section.data.filter(
@@ -65,7 +125,7 @@ export function CurrencyPickerDropdown({
         ),
       }))
       .filter((section) => section.data.length > 0);
-  }, [search, sections]);
+  }, [defaultCodes, search, sections]);
 
   const dropdownWidth = Math.min(300, windowWidth - 16);
   const anchorAlignedLeft =

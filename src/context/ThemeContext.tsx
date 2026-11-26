@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const THEME_STORAGE_KEY = '@app_theme_mode';
 
 export const lightColors = {
   screenBg: '#f5f7fb',
@@ -46,7 +49,7 @@ export const darkColors = {
   navInactive: '#8E8E93',
 };
 
-export type ThemeColors = typeof lightColors;
+export type ThemeColors = typeof darkColors;
 
 interface ThemeContextValue {
   isDarkMode: boolean;
@@ -55,14 +58,36 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  isDarkMode: false,
+  isDarkMode: true,
   setIsDarkMode: () => {},
-  colors: lightColors,
+  colors: darkColors,
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const colors = isDarkMode ? darkColors : lightColors;
+
+  // 1. Load saved theme on mount
+  useEffect(() => {
+    AsyncStorage.getItem(THEME_STORAGE_KEY)
+      .then((savedTheme) => {
+        if (savedTheme !== null) {
+          setIsDarkMode(savedTheme === 'dark');
+        }
+      })
+      .catch((err) => console.warn('Failed to load theme:', err));
+  }, []);
+
+  // 2. Save theme whenever it changes
+  const toggleTheme = () => {
+    setIsDarkMode((prev) => {
+      const next = !prev;
+      AsyncStorage.setItem(THEME_STORAGE_KEY, next ? 'dark' : 'light').catch(
+        (err) => console.warn('Failed to save theme:', err),
+      );
+      return next;
+    });
+  };
 
   return (
     <ThemeContext.Provider value={{ isDarkMode, setIsDarkMode, colors }}>

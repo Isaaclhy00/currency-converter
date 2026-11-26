@@ -62,7 +62,13 @@ export default function RootLayout() {
             </Text>
           </View>
           ) : (
-            <Stack screenOptions={{ headerShown: false }} />
+            // <Stack screenOptions={{ headerShown: false }} />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                gestureEnabled: false,
+              }}
+            />
           )
           ) : (
             <View style={styles.centered}>

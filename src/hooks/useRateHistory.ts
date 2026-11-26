@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from '@tanstack/react-query';
-import { fetchRateHistory, RateHistoryPoint } from '../api/history';
+import { fetchRateHistory, HistoryRange, RateHistoryPoint } from '../api/history';
 
 const CACHE_KEY_PREFIX = 'currency-converter.rate-history.v1';
 const HISTORY_STALE_TIME = 24 * 60 * 60 * 1000;
@@ -16,8 +16,8 @@ interface StoredHistory {
   fetchedAt: number;
 }
 
-function cacheKey(base: string, quote: string): string {
-  return `${CACHE_KEY_PREFIX}.${base}.${quote}`;
+function cacheKey(base: string, quote: string, range: HistoryRange): string {
+  return `${CACHE_KEY_PREFIX}.${base}.${quote}.${range}`;
 }
 
 function validateCachedPoints(value: unknown): RateHistoryPoint[] {
@@ -49,8 +49,9 @@ function validateCachedPoints(value: unknown): RateHistoryPoint[] {
 async function loadCachedHistory(
   base: string,
   quote: string,
+  range: HistoryRange
 ): Promise<RateHistorySnapshot | null> {
-  const serialized = await AsyncStorage.getItem(cacheKey(base, quote));
+  const serialized = await AsyncStorage.getItem(cacheKey(base, quote, range));
   if (serialized === null) {
     return null;
   }
@@ -84,19 +85,21 @@ async function saveHistory(
   base: string,
   quote: string,
   snapshot: StoredHistory,
+  range: HistoryRange
 ): Promise<void> {
-  await AsyncStorage.setItem(cacheKey(base, quote), JSON.stringify(snapshot));
+  await AsyncStorage.setItem(cacheKey(base, quote, range), JSON.stringify(snapshot));
 }
 
 async function getRateHistory(
   base: string,
   quote: string,
+  range: HistoryRange = '1M',
 ): Promise<RateHistorySnapshot> {
-  const cachedHistory = await loadCachedHistory(base, quote);
+  const cachedHistory = await loadCachedHistory(base, quote, range);
   let points: RateHistoryPoint[];
 
   try {
-    points = await fetchRateHistory(base, quote);
+    points = await fetchRateHistory(base, quote, range);
   } catch (error) {
     if (cachedHistory) {
       return cachedHistory;
@@ -105,7 +108,7 @@ async function getRateHistory(
   }
 
   const fetchedAt = Date.now();
-  await saveHistory(base, quote, { points, fetchedAt });
+  await saveHistory(base, quote, { points, fetchedAt }, range);
   return { points, fetchedAt, source: 'network' };
 }
 
@@ -113,10 +116,11 @@ export function useRateHistory(
   base: string,
   quote: string,
   enabled = true,
+  range: HistoryRange = '1M',
 ) {
   return useQuery({
-    queryKey: ['rate-history', base, quote],
-    queryFn: () => getRateHistory(base, quote),
+    queryKey: ['rate-history', base, quote, range],
+    queryFn: () => getRateHistory(base, quote, range),
     staleTime: HISTORY_STALE_TIME,
     enabled,
     retry: false,

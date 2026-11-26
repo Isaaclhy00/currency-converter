@@ -29,6 +29,7 @@ import {
   CurrencyConverter,
   CurrencyConverterHandle,
 } from '../src/components/CurrencyConverter';
+import { RateHistoryDetailScreen } from '../src/components/RateHistoryDetailScreen';
 import { SettingsScreen } from '../src/components/Settings';
 import { useTheme } from '../src/context/ThemeContext';
 
@@ -65,7 +66,7 @@ export default function ConverterScreen() {
       styles.safeArea,
       { backgroundColor: isDarkMode ? '#000000' : '#f5f7fb' },
     ]}>
-       <View style={[styles.container, { paddingBottom: navHeight - 10 }]}>
+       <View style={[styles.container, { paddingBottom: navHeight - 0 }]}>
           <View style={styles.headerRow}>
             <TrexAnimatedLogo size={36} />
             <Text style={styles.eyebrow}>T-REX</Text>
@@ -89,7 +90,7 @@ export default function ConverterScreen() {
               ratesQuery.refetch();
             }}
           />
-        ) : (
+        ) : activeMode === 'settings' ? (
           <SettingsScreen
             defaultBaseCurrency={defaultBaseCurrency}
             onDefaultBaseCurrencyChange={(code) => {
@@ -99,7 +100,7 @@ export default function ConverterScreen() {
             defaultToCurrency={defaultToCurrency}
             onDefaultToCurrencyChange={setDefaultToCurrency}
           />
-        )}
+        ) : (<View />)}
       </View>
 
       <ModeSwitcher

@@ -3,8 +3,33 @@ export interface RateHistoryPoint {
   rate: number;
 }
 
-const HISTORY_DAYS = 30;
+// const HISTORY_DAYS = 30;
+export type HistoryRange = '1W' | '1M' | '3M' | '6M' | '1Y' | '5Y';
 const HISTORY_API_URL = 'https://api.frankfurter.dev/v2/rates';
+function getStartDateForRange(end: Date, range: HistoryRange): Date {
+  const start = new Date(end);
+  switch (range) {
+    case '1W':
+      start.setUTCDate(start.getUTCDate() - 7);
+      break;
+    case '1M':
+      start.setUTCMonth(start.getUTCMonth() - 1);
+      break;
+    case '3M':
+      start.setUTCMonth(start.getUTCMonth() - 3);
+      break;
+    case '6M':
+      start.setUTCMonth(start.getUTCMonth() - 6);
+      break;
+    case '1Y':
+      start.setUTCFullYear(start.getUTCFullYear() - 1);
+      break;
+    case '5Y':
+      start.setUTCFullYear(start.getUTCFullYear() - 5);
+      break;
+  }
+  return start;
+}
 
 function isValidDate(date: unknown): date is string {
   return (
@@ -74,12 +99,15 @@ function formatDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-function makeIdentityHistory(): RateHistoryPoint[] {
+function makeIdentityHistory(range: HistoryRange): RateHistoryPoint[] {
   const end = new Date();
-  const start = new Date(end);
-  start.setUTCDate(start.getUTCDate() - HISTORY_DAYS);
+  const start = getStartDateForRange(end, range);
+  const totalDays = Math.max(
+    1,
+    Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)),
+  );
 
-  return Array.from({ length: HISTORY_DAYS + 1 }, (_, index) => {
+  return Array.from({ length: totalDays + 1 }, (_, index) => {
     const date = new Date(start);
     date.setUTCDate(start.getUTCDate() + index);
     return { date: formatDate(date), rate: 1 };
@@ -89,17 +117,17 @@ function makeIdentityHistory(): RateHistoryPoint[] {
 export async function fetchRateHistory(
   base: string,
   quote: string,
+  range: HistoryRange = '1M',
 ): Promise<RateHistoryPoint[]> {
   if (!/^[A-Z]{3}$/.test(base) || !/^[A-Z]{3}$/.test(quote)) {
     throw new Error('Currency codes must be three uppercase letters');
   }
   if (base === quote) {
-    return makeIdentityHistory();
+    return makeIdentityHistory(range);
   }
 
   const end = new Date();
-  const start = new Date(end);
-  start.setUTCDate(start.getUTCDate() - HISTORY_DAYS);
+  const start = getStartDateForRange(end, range);
   const url = `${HISTORY_API_URL}?from=${formatDate(start)}&to=${formatDate(
     end,
   )}&base=${base}&quotes=${quote}`;

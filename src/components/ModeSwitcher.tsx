@@ -2,8 +2,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
+import * as Haptics from 'expo-haptics';
 
-export type AppMode = 'convert' | 'charts' | 'settings';
+export type AppMode = 'convert' | 'charts' | 'details' | 'settings';
 
 interface ModeSwitcherProps {
   mode: AppMode;
@@ -56,7 +57,10 @@ export function ModeSwitcher({
             key={tab.key}
             accessibilityRole="tab"
             accessibilityState={{ selected: isActive }}
-            onPress={() => onChange(tab.key)}
+            onPress={() => {
+              onChange(tab.key);
+              // Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
             style={styles.tab}
           >
             <Ionicons name={iconName} size={20} color={tintColor} />
@@ -84,8 +88,8 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 0,
+    paddingBottom: 0,
     paddingHorizontal: 16,
   },
   tab: {
@@ -93,6 +97,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
+    paddingTop: 10,
+    paddingBottom: 10,
   },
   label: {
     fontSize: 11,
